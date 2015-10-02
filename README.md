@@ -18,6 +18,15 @@ ODMatrix = new GeoTabulaInfoVis.ODMatrix({
 		origHeight : 500,  // height of div for origin
 		destWidth : 500,  // width of div for destination
 		destHeight : 500,  // height of div for destination
+		onmouseover : callback, //callback for mouse over events
+		onmouseout : callback, //callback for mouse out events
+		origcolor : "#000", //Origin color for text
+		destcolor : "#000", //Destination color for text
+		onmouseover : callback,	//Callback for mouse over event
+		onmouseoout : callback,	//Callback for mouse out event
+		origcolor : "#000",	//Color for origin text
+		destcolor : "#000"	//Color for destination text
 });
 ODMatrix.createODMatrix();
 ```
+
