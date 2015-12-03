@@ -380,13 +380,24 @@ function ODMatrixBar(params){
 	this.onmouseout = params.onmouseout;
 	this.onmouseclick = params.onmouseclick;
 	
+	this.formatter = d3.format(",.2f");
+	this.dataMapForLines = {};
+	this.colorScaleForLines = null;
+	
 	this.selected = {
+		i : -1,
 		id : 'none',
+		type : 'none',
+	};
+	
+	this.hover = {
+		i : -1,
+		id: 'none',
 		type : 'none'
 	};
 	
 	this.margin = {
-		top : 30,
+		top : 40,
 		right : 40,
 		bottom : 40,
 		left : 20
@@ -473,7 +484,8 @@ ODMatrixBar.prototype.create = function()
 			o : totalDataOrig[i],
 			d : totalDataDest[i],
 			t : totalDataOrig[i] + totalDataDest[i],
-			n : this.matrixKeys[i]
+			n : this.matrixKeys[i],
+			i : i
 		});
 	}
 	
@@ -504,11 +516,15 @@ ODMatrixBar.prototype.create = function()
 			return "rect_orig_" + i;
 		})
 		.on("mouseover", function(d,i){
+			_this.hover.type = "orig";
+			_this.hover.i = i;
 			_this.showTooltip(i);
 			if(_this.selected.id == 'none')
+			{
 				_this.fade("orig", i);
+			}
 			else
-				_this.highlightPath(_this.matrixKeys.indexOf(_this.selected.id), i);
+				_this.highlightPath(_this.selected.i, i);
 			
 		})
 		.on("mouseout", function(d,i){
@@ -516,7 +532,7 @@ ODMatrixBar.prototype.create = function()
 			if(_this.selected.id == 'none')
 				_this.fade();
 			else{
-				_this.showTooltip(_this.matrixKeys.indexOf(_this.selected.id));
+				_this.showTooltip(_this.selected.i);
 				_this.highlightPath();
 			}
 			
@@ -540,11 +556,16 @@ ODMatrixBar.prototype.create = function()
 			return "rect_dest_" + i;
 		})
 		.on("mouseover", function(d,i){
+			_this.hover.type = "dest";
+			_this.hover.i = i;
 			_this.showTooltip(i);
 			if(_this.selected.id == 'none')
+			{
 				_this.fade("dest", i);
+				
+			}
 			else
-				_this.highlightPath(_this.matrixKeys.indexOf(_this.selected.id), i);
+				_this.highlightPath(_this.selected.i, i);
 						
 		})
 		.on("mouseout", function(d,i){
@@ -552,7 +573,7 @@ ODMatrixBar.prototype.create = function()
 			if(_this.selected.id == 'none')
 				_this.fade();
 			else{
-				_this.showTooltip(_this.matrixKeys.indexOf(_this.selected.id));
+				_this.showTooltip(_this.selected.i);
 				_this.highlightPath();
 			}
 		})
@@ -569,13 +590,14 @@ ODMatrixBar.prototype.create = function()
 			return "label_line_" + i;
 		})
 		.attr("class", "bar_label_line")
-		.attr("stroke-width", 1)
+		.attr("stroke-width", 0.5)
 		.attr("stroke", "black")
 		.attr("opacity", 0);
-		
+	
+	//Text for matrix keys
 	bar.append("text")
 		.attr("x",(barWidth / 2) + 1)
-		.attr("y",10)
+		.attr("y",0)
 		.attr("id", function(d,i){
 			return "label_text_" + i;
 		})
@@ -584,7 +606,37 @@ ODMatrixBar.prototype.create = function()
 			return d.n;
 		})
 		.attr("font-size", 10)
+		.attr("font-weight", 'bold')
 		.attr("opacity", 0);
+		
+	//Text for values	
+	bar.append("text")
+		.attr("x",(barWidth / 2) + 1)
+		.attr("y",10)
+		.attr("id", function(d,i){
+			return "label_text_in_" + i;
+		})
+		.attr("class", "bar_label_text")
+		.attr("font-size", 10)
+		.attr("opacity", 0);
+		
+	bar.append("text")
+		.attr("x",(barWidth / 2) - 2)
+		.attr("y",10)
+		.attr("id", function(d,i){
+			return "label_text_out_" + i;
+		})
+		.attr("class", "bar_label_text")
+		.attr("font-size", 10)
+		.attr("text-anchor", "end")
+		.attr("opacity", 0);
+	
+	function getBB(selection)
+	{
+		selection.each(function(d){
+			console.log(this.getBBox());
+			});
+	}
 
 	var bezierLine = d3.svg.line()
 		.x(function(d) {
@@ -620,22 +672,22 @@ ODMatrixBar.prototype.create = function()
 		colorbrewer.Greys[6][5],
 	];
 	
-	var colorScaleForLines = d3.scale.linear().domain(domain).range(colorMap);
+	this.colorScaleForLines = d3.scale.linear().domain(domain).range(colorMap);
 	
-	var dataMapForLines = {};
+	
 	
 	for(row_i in this.matrix)
 	{
 		var dataForLines = this.matrix[row_i];
 		for(col_j in dataForLines)
 		{
-			dataMapForLines["od_" + row_i + "_" + col_j] = dataForLines[col_j];
+			this.dataMapForLines["od_" + row_i + "_" + col_j] = dataForLines[col_j];
 		}
 	}
 		
-	var keys = Object.keys(dataMapForLines).sort(function(a,b){
-			var x = dataMapForLines[a];
-			var y = dataMapForLines[b];
+	var keys = Object.keys(_this.dataMapForLines).sort(function(a,b){
+			var x = _this.dataMapForLines[a];
+			var y = _this.dataMapForLines[b];
 			if(x > y)
 				return 1;
 			else if( x < y)
@@ -644,73 +696,79 @@ ODMatrixBar.prototype.create = function()
 				return 0;
 		}); 
 	
-	// for(k in keys)
-	// {
-		
-		var odlines = this.chart.append('g').attr('id', 'odlines_');
-		odlines.selectAll('g')
-			.data(keys)
-			.enter()
-			.append('path')
-			.attr("class", "od_path")
-			.attr('id', function(d,i){
-				var temp = d.replace("od_", "").split("_");
-				var row_i = parseInt(temp[0]);
-				var dest_i = parseInt(temp[1]);	
-				return 'path_' + row_i + "_" + dest_i;
+	var odlines = this.chart.append('g').attr('id', 'odlines_');
+	odlines.selectAll('g')
+		.data(keys)
+		.enter()
+		.append('path')
+		.attr("class", "od_path")
+		.attr('id', function(d,i){
+			var temp = d.replace("od_", "").split("_");
+			var row_i = parseInt(temp[0]);
+			var dest_i = parseInt(temp[1]);	
+			return 'path_' + row_i + "_" + dest_i;
+		})
+		.attr('d', function(d,i){
+			var temp = d.replace("od_", "").split("_");
+			var row_i = parseInt(temp[0]);
+			var dest_i = parseInt(temp[1]);	
+			var cPoints = [];
+			var x_base = (row_i * barWidth);
+			var distance = Math.sqrt(Math.pow((x_base + x_l) - ((dest_i * barWidth) + x_r), 2)); 
+			var cpy = scaleForLines(_this.dataMapForLines[d]);
+			cPoints.push([x_base + x_l, _this.chartltop]);
+			if(dest_i >= row_i)
+			{
+				cPoints.push([x_base + x_l + ( distance * 0.35), cpy]);
+				cPoints.push([x_base + x_l + ( distance * 0.65), cpy]);
+			}
+			else
+			{
+				cPoints.push([(dest_i * barWidth) + x_r + ( distance * 0.65), cpy]);
+				cPoints.push([(dest_i * barWidth) + x_r + ( distance * 0.35), cpy]);
+			}	
+			
+			cPoints.push([(dest_i * barWidth) + x_r, _this.chartltop]);	
+			return _this.dataMapForLines[d] == 0 ? null : bezierLine(cPoints);
+		})
+		.attr("stroke", function(d) {
+			//console.log(d);
+			return _this.colorScaleForLines(_this.dataMapForLines[d]);
 			})
-			.attr('d', function(d,i){
-				var temp = d.replace("od_", "").split("_");
-				var row_i = parseInt(temp[0]);
-				var dest_i = parseInt(temp[1]);	
-				var cPoints = [];
-				var x_base = (row_i * barWidth);
-				var distance = Math.sqrt(Math.pow((x_base + x_l) - ((dest_i * barWidth) + x_r), 2)); 
-				var cpy = scaleForLines(dataMapForLines[d]);
-				cPoints.push([x_base + x_l, _this.chartltop]);
-				if(dest_i >= row_i)
-				{
-					cPoints.push([x_base + x_l + ( distance * 0.35), cpy]);
-					cPoints.push([x_base + x_l + ( distance * 0.65), cpy]);
-				}
-				else
-				{
-					cPoints.push([(dest_i * barWidth) + x_r + ( distance * 0.65), cpy]);
-					cPoints.push([(dest_i * barWidth) + x_r + ( distance * 0.35), cpy]);
-				}	
-				
-				cPoints.push([(dest_i * barWidth) + x_r, _this.chartltop]);	
-				return dataMapForLines[d] == 0 ? null : bezierLine(cPoints);
-			})
-			.attr("stroke", function(d) {
-				//console.log(d);
-				return colorScaleForLines(dataMapForLines[d]);
-				})
-	        .attr("stroke-width", 1)
-	        .attr("fill", "none")
-	        .attr("data", function(d,i){
-	        	var temp = d.replace("od_", "").split("_");
-				var row_i = parseInt(temp[0]);
-				var dest_i = parseInt(temp[1]);	
-	        	return "line_" + row_i + "_" + dest_i;
-	        })
-	        .on('mouseover', function(d){
-	        		console.log(dataMapForLines[d]);
-	        	}	
-	        );	
-     	
-	// }
+	    .attr("stroke-width", 1)
+	    .attr("fill", "none")
+	    .attr("data", function(d,i){
+	    	var temp = d.replace("od_", "").split("_");
+			var row_i = parseInt(temp[0]);
+			var dest_i = parseInt(temp[1]);	
+	    	return "line_" + row_i + "_" + dest_i;
+	    })
+	    .attr("style", "opacity:1.0")
+	    .on('mouseover', function(d){
+	    	if(d3.select(this).attr("style") && d3.select(this).attr("style") == 'opacity:1.0')
+	    	{
+	    		var temp = d.replace("od_", "").split("_");
+				var orig = parseInt(temp[0]);
+				var dest = parseInt(temp[1]);	
+	    		_this.onmouseoverPath(orig, dest);
+	    	}
+	    })
+	    .on('mouseout', function(d){
+	    	_this.onmouseoverPath();
+	    });	
 }
 
 ODMatrixBar.prototype.barclick = function(d, i, type)
 {
 	if(this.selected.id == 'none')
 	{
+		this.selected.i = i;
 		this.selected.id = this.matrixKeys[i];
 		this.selected.type = type;
 	}
 	else if(_this.selected.id == this.matrixKeys[i])
 	{
+		this.selected.i = -1;
 		this.selected.id = 'none';
 		this.selected.type = 'none';
 	}
@@ -744,10 +802,6 @@ ODMatrixBar.prototype.fade = function(type, i)
 			.attr("y", function(d, index){
 				return _this.scaleY(d.d);
 			})
-		// d3.selectAll(".od_path")
-			// .attr("style", function(d){
-				// return "opacity:1.0"; 	
-			// })
 		this.highlightPath();
 		if (this.onmouseout) {
 			this.onmouseout(this.matrixKeys[i], i);
@@ -762,7 +816,7 @@ ODMatrixBar.prototype.fade = function(type, i)
 			d3.selectAll(".rect_orig")
 				.attr("style", function(d){
 					var data = parseInt(d3.select(this).attr("data").replace("rect_orig_",""));
-					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.2" 	
+					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.1" 	
 				})
 			d3.selectAll(".rect_dest")
 				.attr("height", function(d,index){
@@ -773,15 +827,6 @@ ODMatrixBar.prototype.fade = function(type, i)
 					var trips = _this.matrix[i][index];
 					return _this.scaleY(trips);
 				})
-			// d3.selectAll(".od_path")
-				// .attr("style", function(d){
-					// var data = d3.select(this).attr("id");
-					// var temp = data.replace("path_","").split("_");
-					// var orig = parseInt(temp[0]);
-					// var dest = parseInt(temp[1]);
-					// return orig == i ? "opacity:1.0" : "opacity:0"
-// 					 	
-				// })
 			this.highlightPath(i, null);
 
 		}
@@ -790,7 +835,7 @@ ODMatrixBar.prototype.fade = function(type, i)
 			d3.selectAll(".rect_dest")
 				.attr("style", function(d){
 					var data = parseInt(d3.select(this).attr("data").replace("rect_dest_",""));
-					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.2" 	
+					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.1" 	
 				})
 			d3.selectAll(".rect_orig")
 				.attr("height", function(d,index){
@@ -801,15 +846,6 @@ ODMatrixBar.prototype.fade = function(type, i)
 					var trips = _this.matrix[index][i];
 					return _this.scaleY(trips);
 				})
-			// d3.selectAll(".od_path")
-				// .attr("style", function(d){
-					// var data = d3.select(this).attr("id");
-					// var temp = data.replace("path_","").split("_");
-					// var orig = parseInt(temp[0]);
-					// var dest = parseInt(temp[1]);
-					// return dest == i ? "opacity:1.0" : "opacity:0"
-// 					 	
-				// })
 			this.highlightPath(null,i);
 		}
 		if (this.onmouseover) {
@@ -827,6 +863,76 @@ ODMatrixBar.prototype.showTooltip = function(i)
 			.attr("opacity", 1);
 		d3.select("#label_text_" + i)
 			.attr("opacity", 1);
+		if(this.selected.id == 'none')
+		{
+			d3.select("#label_text_out_" + i)
+				.attr("opacity", 1)
+				.attr("font-weight", _this.hover.type == "orig" ? "bold" : "normal")
+				.attr("fill", _this.hover.type == "orig" ? "#000" : "#AAA")
+				.text(function(d){
+					return _this.hover.type == "orig" ? _this.formatter(d.o) : _this.formatter(_this.matrix[i][i]);
+				});
+			d3.select("#label_text_in_" + i)
+				.attr("opacity", 1)
+				.attr("font-weight", _this.hover.type == "orig" ? "normal" : "bold")
+				.attr("fill", _this.hover.type == "orig" ? "#AAA" : "#000")
+				.text(function(d){
+					return _this.hover.type == "orig" ? _this.formatter(_this.matrix[i][i]) : _this.formatter(d.d);
+			});
+		}
+		else
+		{
+			d3.select("#label_text_out_" + i)
+				.attr("opacity", function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return 1;
+					else
+						return _this.selected.type == "orig" ? 0 : 1
+				})
+				.attr("font-weight", function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return _this.selected.type == "orig" ? "bold" : "normal"
+					else
+						return _this.selected.type == "orig" ? "normal" : "bold"
+				})
+				.attr("fill", function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return _this.selected.type == "orig" ? "#000" : "#AAA";
+					else
+						return _this.selected.type == "orig" ? "#AAA" : "#000";
+				})
+				.text(function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return _this.selected.type == "orig" ? _this.formatter(d.o) : _this.formatter(_this.matrix[i][i]);
+					else
+						return _this.selected.type == "orig" ? _this.formatter(_this.matrix[_this.selected.i][i]) : _this.formatter(_this.matrix[i][_this.selected.i]);
+				});
+			d3.select("#label_text_in_" + i)
+				.attr("opacity", function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return 1;
+					else
+						return _this.selected.type == "orig" ? 1 : 0
+				})
+				.attr("font-weight", function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return _this.selected.type == "orig" ? "normal" : "bold";
+					else
+						return _this.selected.type == "orig" ? "bold" : "normal";
+				})
+				.attr("fill", function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return _this.selected.type == "orig" ? "#AAA" : "#000";
+					else
+						return _this.selected.type == "orig" ? "#000" : "#AAA";
+				})
+				.text(function(d){
+					if(parseInt(d.i) == _this.selected.i)
+						return _this.selected.type == "orig" ? _this.formatter(_this.matrix[i][i]) : _this.formatter(d.d);
+					else
+						return _this.selected.type == "orig" ? _this.formatter(_this.matrix[_this.selected.i][i]) : _this.formatter(_this.matrix[i][_this.selected.i]);
+			});
+		}
 	}
 	else
 	{
@@ -843,10 +949,13 @@ ODMatrixBar.prototype.highlightPath = function(orig, dest)
 	{
 		d3.selectAll(".od_path")
 			.attr("style", "opacity:0");
-		d3.select("#path_" + orig + "_" + dest)
-			.attr("style", "opacity:1.0");
-		d3.select("#path_" + dest + "_" + orig)
-			.attr("style", "opacity:1.0");
+		if(this.selected.type == "orig")
+			d3.select("#path_" + orig + "_" + dest)
+				.attr("style", "opacity:1.0");
+		else
+			d3.select("#path_" + dest + "_" + orig)
+				.attr("style", "opacity:1.0");
+			
 	}
 	else if(orig != null && dest == null)
 	{
@@ -909,4 +1018,70 @@ ODMatrixBar.prototype.highlightPath = function(orig, dest)
 			}
 		}
 	}
+}
+
+ODMatrixBar.prototype.onmouseoverPath = function(orig, dest)
+{
+	if(orig != null && dest != null)
+	{
+		if(this.selected.id == 'none')
+		{
+			d3.selectAll(".od_path")
+				.attr("style", "opacity:0.1");
+			d3.select("#path_" + orig + "_" + dest)
+				.attr("style", "opacity:1.0")
+				.attr("stroke", "#000");
+		}
+		else
+		{
+			d3.selectAll(".od_path")
+				.attr("style", "opacity:0.0");
+			d3.select("#path_" + orig + "_" + dest)
+				.attr("style", "opacity:1.0")
+				.attr("stroke", "#000");
+			
+			var target = this.matrixKeys.indexOf(this.selected.id); 
+			d3.selectAll(".od_path")
+				.attr("style", function(d,i){
+					var id = d3.select(this).attr("id");
+					var od = id.substring(5).split("_");
+					if(od[this.selected.type == 'orig' ? 0 : 1] == target)
+						return "opacity:1.0";
+					else
+						return "opacity:0.1";
+				})
+				.attr("stroke", function(d){
+					return _this.colorScaleForLines(_this.dataMapForLines[d]);
+				});
+		}	
+	}
+	else
+	{
+		if(this.selected.id == 'none')
+		{
+			d3.selectAll(".od_path")
+				.attr("style", "opacity:1.0")
+				.attr("stroke", function(d){
+					return _this.colorScaleForLines(_this.dataMapForLines[d]);
+				});	
+		}
+		else
+		{	
+			var target = this.matrixKeys.indexOf(this.selected.id); 
+			d3.selectAll(".od_path")
+				.attr("style", function(d,i){
+					var id = d3.select(this).attr("id");
+					var od = id.substring(5).split("_");
+					if(od[this.selected.type == 'orig' ? 0 : 1] == target)
+						return "opacity:1.0";
+					else
+						return "opacity:0.0";
+				})
+				.attr("stroke", function(d){
+					return _this.colorScaleForLines(_this.dataMapForLines[d]);
+				});
+			
+		}
+	}
+	
 }
