@@ -380,7 +380,10 @@ function ODMatrixBar(params){
 	this.onmouseout = params.onmouseout;
 	this.onmouseclick = params.onmouseclick;
 	
-	this.selected = 'none';
+	this.selected = {
+		id : 'none',
+		type : 'none'
+	};
 	
 	this.margin = {
 		top : 30,
@@ -388,6 +391,11 @@ function ODMatrixBar(params){
 		bottom : 40,
 		left : 20
 	}
+	
+	this.tooltipDiv = d3.select("body").append("div")	
+    	.attr("class", "tooltip")				
+    	.style("opacity", 0);
+
 }
 
 ODMatrixBar.prototype.create = function()
@@ -464,7 +472,8 @@ ODMatrixBar.prototype.create = function()
 		data.push({
 			o : totalDataOrig[i],
 			d : totalDataDest[i],
-			t : totalDataOrig[i] + totalDataDest[i]
+			t : totalDataOrig[i] + totalDataDest[i],
+			n : this.matrixKeys[i]
 		});
 	}
 	
@@ -495,15 +504,25 @@ ODMatrixBar.prototype.create = function()
 			return "rect_orig_" + i;
 		})
 		.on("mouseover", function(d,i){
-			if(_this.selected == 'none')
+			_this.showTooltip(i);
+			if(_this.selected.id == 'none')
 				_this.fade("orig", i);
+			else
+				_this.highlightPath(_this.matrixKeys.indexOf(_this.selected.id), i);
+			
 		})
 		.on("mouseout", function(d,i){
-			if(_this.selected == 'none')
+			_this.showTooltip();	
+			if(_this.selected.id == 'none')
 				_this.fade();
+			else{
+				_this.showTooltip(_this.matrixKeys.indexOf(_this.selected.id));
+				_this.highlightPath();
+			}
+			
 		})
 		.on("click", function(d,i){
-			_this.barclick(d,i);
+			_this.barclick(d,i,"orig");
 		})
 		
 	bar.append("rect")
@@ -521,16 +540,51 @@ ODMatrixBar.prototype.create = function()
 			return "rect_dest_" + i;
 		})
 		.on("mouseover", function(d,i){
-			if(_this.selected == 'none')
+			_this.showTooltip(i);
+			if(_this.selected.id == 'none')
 				_this.fade("dest", i);
+			else
+				_this.highlightPath(_this.matrixKeys.indexOf(_this.selected.id), i);
+						
 		})
 		.on("mouseout", function(d,i){
-			if(_this.selected == 'none')
+			_this.showTooltip();
+			if(_this.selected.id == 'none')
 				_this.fade();
+			else{
+				_this.showTooltip(_this.matrixKeys.indexOf(_this.selected.id));
+				_this.highlightPath();
+			}
 		})
 		.on("click", function(d,i){
-			_this.barclick(d,i);
+			_this.barclick(d,i,"dest");
 		})
+
+	bar.append("line")
+		.attr("x1",(barWidth / 2) - 1)
+		.attr("y1",0)
+		.attr("x2",(barWidth / 2) - 1)
+		.attr("y2",_this.chartheight)
+		.attr("id", function(d,i){
+			return "label_line_" + i;
+		})
+		.attr("class", "bar_label_line")
+		.attr("stroke-width", 1)
+		.attr("stroke", "black")
+		.attr("opacity", 0);
+		
+	bar.append("text")
+		.attr("x",(barWidth / 2) + 1)
+		.attr("y",10)
+		.attr("id", function(d,i){
+			return "label_text_" + i;
+		})
+		.attr("class", "bar_label_text")
+		.text(function(d,i){
+			return d.n;
+		})
+		.attr("font-size", 10)
+		.attr("opacity", 0);
 
 	var bezierLine = d3.svg.line()
 		.x(function(d) {
@@ -648,12 +702,18 @@ ODMatrixBar.prototype.create = function()
 	// }
 }
 
-ODMatrixBar.prototype.barclick = function(d, i)
+ODMatrixBar.prototype.barclick = function(d, i, type)
 {
-	if(this.selected == 'none')
-		this.selected = this.matrixKeys[i];
-	else if(_this.selected == this.matrixKeys[i])
-		this.selected = 'none';
+	if(this.selected.id == 'none')
+	{
+		this.selected.id = this.matrixKeys[i];
+		this.selected.type = type;
+	}
+	else if(_this.selected.id == this.matrixKeys[i])
+	{
+		this.selected.id = 'none';
+		this.selected.type = 'none';
+	}
 		
 	if(this.onmouseclick)
 		this.onmouseclick(d,i);
@@ -684,13 +744,16 @@ ODMatrixBar.prototype.fade = function(type, i)
 			.attr("y", function(d, index){
 				return _this.scaleY(d.d);
 			})
-		d3.selectAll(".od_path")
-			.attr("style", function(d){
-				return "opacity:1.0"; 	
-			})
+		// d3.selectAll(".od_path")
+			// .attr("style", function(d){
+				// return "opacity:1.0"; 	
+			// })
+		this.highlightPath();
 		if (this.onmouseout) {
 			this.onmouseout(this.matrixKeys[i], i);
 		}
+		
+		
 	}
 	else
 	{
@@ -710,15 +773,17 @@ ODMatrixBar.prototype.fade = function(type, i)
 					var trips = _this.matrix[i][index];
 					return _this.scaleY(trips);
 				})
-			d3.selectAll(".od_path")
-				.attr("style", function(d){
-					var data = d3.select(this).attr("id");
-					var temp = data.replace("path_","").split("_");
-					var orig = parseInt(temp[0]);
-					var dest = parseInt(temp[1]);
-					return orig == i ? "opacity:1.0" : "opacity:0"
-					 	
-				})
+			// d3.selectAll(".od_path")
+				// .attr("style", function(d){
+					// var data = d3.select(this).attr("id");
+					// var temp = data.replace("path_","").split("_");
+					// var orig = parseInt(temp[0]);
+					// var dest = parseInt(temp[1]);
+					// return orig == i ? "opacity:1.0" : "opacity:0"
+// 					 	
+				// })
+			this.highlightPath(i, null);
+
 		}
 		else if(type == 'dest')
 		{
@@ -736,18 +801,112 @@ ODMatrixBar.prototype.fade = function(type, i)
 					var trips = _this.matrix[index][i];
 					return _this.scaleY(trips);
 				})
-			d3.selectAll(".od_path")
-				.attr("style", function(d){
-					var data = d3.select(this).attr("id");
-					var temp = data.replace("path_","").split("_");
-					var orig = parseInt(temp[0]);
-					var dest = parseInt(temp[1]);
-					return dest == i ? "opacity:1.0" : "opacity:0"
-					 	
-				})
+			// d3.selectAll(".od_path")
+				// .attr("style", function(d){
+					// var data = d3.select(this).attr("id");
+					// var temp = data.replace("path_","").split("_");
+					// var orig = parseInt(temp[0]);
+					// var dest = parseInt(temp[1]);
+					// return dest == i ? "opacity:1.0" : "opacity:0"
+// 					 	
+				// })
+			this.highlightPath(null,i);
 		}
 		if (this.onmouseover) {
 			this.onmouseover(this.matrixKeys[i], i);
+		}
+			
+	}
+}
+
+ODMatrixBar.prototype.showTooltip = function(i)
+{
+	if(i != null)
+	{
+		d3.select("#label_line_" + i)
+			.attr("opacity", 1);
+		d3.select("#label_text_" + i)
+			.attr("opacity", 1);
+	}
+	else
+	{
+		d3.selectAll(".bar_label_line")
+			.attr("opacity", 0);
+		d3.selectAll(".bar_label_text")
+			.attr("opacity", 0);
+	}
+}
+
+ODMatrixBar.prototype.highlightPath = function(orig, dest)
+{
+	if(orig != null && dest != null)
+	{
+		d3.selectAll(".od_path")
+			.attr("style", "opacity:0");
+		d3.select("#path_" + orig + "_" + dest)
+			.attr("style", "opacity:1.0");
+		d3.select("#path_" + dest + "_" + orig)
+			.attr("style", "opacity:1.0");
+	}
+	else if(orig != null && dest == null)
+	{
+		d3.selectAll(".od_path")
+			.attr("style", function(d,i){
+				var id = d3.select(this).attr("id");
+				var od = id.substring(5).split("_");
+				if(od[0] == orig)
+					return "opacity:1.0";
+				else
+					return "opacity:0.0";
+			});
+	}
+	else if(orig == null && dest != null)
+	{
+		d3.selectAll(".od_path")
+			.attr("style", function(d,i){
+				var id = d3.select(this).attr("id");
+				var od = id.substring(5).split("_");
+				if(od[1] == dest)
+					return "opacity:1.0";
+				else
+					return "opacity:0.0";
+			});
+	}
+	else
+	{
+		if(this.selected.id == 'none')
+		{
+			d3.selectAll(".od_path")
+				.attr("style", "opacity:1.0");
+		}
+		else
+		{
+			if(this.selected.type == 'orig')
+			{
+				orig = this.matrixKeys.indexOf(this.selected.id);
+				d3.selectAll(".od_path")
+					.attr("style", function(d,i){
+						var id = d3.select(this).attr("id");
+						var od = id.substring(5).split("_");
+						if(od[0] == orig)
+							return "opacity:1.0";
+						else
+							return "opacity:0.0";
+					});
+			}
+			else
+			{
+				dest = this.matrixKeys.indexOf(this.selected.id); 
+				d3.selectAll(".od_path")
+					.attr("style", function(d,i){
+						var id = d3.select(this).attr("id");
+						var od = id.substring(5).split("_");
+						if(od[1] == dest)
+							return "opacity:1.0";
+						else
+							return "opacity:0.0";
+					});
+			}
 		}
 	}
 }
