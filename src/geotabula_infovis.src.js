@@ -60,7 +60,9 @@ function ODMatrix(params){
     this.posDest = [0,0]
 }
 
-
+/**
+ * 
+ */
 ODMatrix.prototype.createODMatrix = function()
 {
 	if(this.divOrig && this.divDest)
@@ -70,7 +72,9 @@ ODMatrix.prototype.createODMatrix = function()
 	}
 }
 
-
+/**
+ * 
+ */
 ODMatrix.prototype.mouseOver = function(i){
 	if (!this.freeze) {
 		this.updateTextODOrig(true, i);
@@ -93,7 +97,9 @@ ODMatrix.prototype.mouseOver = function(i){
 	
 	
 }
-
+/**
+ * 
+ */
 ODMatrix.prototype.mouseOut = function(i){
 	if (!this.freeze) {
 		this.updateTextODOrig(false, i);
@@ -107,6 +113,9 @@ ODMatrix.prototype.mouseOut = function(i){
 		// .style("opacity", 0);  
 }
 
+/**
+ * 
+ */
 ODMatrix.prototype.mouseClicked = function(i)
 {
 	this.freeze = ! this.freeze;
@@ -119,6 +128,10 @@ ODMatrix.prototype.mouseClicked = function(i)
 	}
 }
 
+
+/**
+ * 
+ */
 ODMatrix.prototype.updateTextODOrig = function(highlight, i)
 	{
 		d3.select("#matrix_key_" + i)
@@ -142,7 +155,10 @@ ODMatrix.prototype.updateTextODOrig = function(highlight, i)
 				}
 			})
 	}
-	
+
+/**
+ * 
+ */	
 ODMatrix.prototype.updateTextODDest = function(highlight, i)
 	{
 		d3.select("#matrix_key_dest" + i)
@@ -167,6 +183,9 @@ ODMatrix.prototype.updateTextODDest = function(highlight, i)
 			})
 	}
 
+/**
+ * 
+ */
 ODMatrix.prototype.createOdMatrixVisualization = function() {
 		var matrix = this.matrix;
 		// var updateTextODOrig = this.updateTextODOrig;
@@ -272,6 +291,10 @@ ODMatrix.prototype.createOdMatrixVisualization = function() {
 
 	}
 	
+	
+	/**
+	 * 
+	 */
 ODMatrix.prototype.createOdMatrixVisualizationDest = function() {
 		var matrix = []
 		for(var i = 0; i < this.matrix.length; i++)
