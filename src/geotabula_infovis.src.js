@@ -414,6 +414,7 @@ ODMatrix.prototype.createOdMatrixVisualizationDest = function() {
 //************************************************************************
 /**
  * Constructor 
+ * 
  * @param {Object} params
  */
 function ODMatrixBar(params){
@@ -838,9 +839,9 @@ ODMatrixBar.prototype.barclick = function(d, i, type)
 };
 
 /**
- * 
- * @param {Object} type
- * @param {Object} i
+ * Fades all connection lines except the ones that belongs to the selected node
+ * @param {Object} type if its origin or destination
+ * @param {Object} i index of selected node
  */
 ODMatrixBar.prototype.fade = function(type, i)
 {
