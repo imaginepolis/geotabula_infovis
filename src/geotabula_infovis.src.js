@@ -1,8 +1,26 @@
+/**
+ * geotabula_infovis.src.js
+ * Main file for OD Matrices InfoVis 
+ * @author: Juan Camilo Ibarra
+ * @Creation_Date: September 2015
+ * @version: 0.1.0
+ * @Update_Author : Juan Camilo Ibarra
+ * @Date: January 2016
+ */
+
+/**
+ *  
+ */
 var GeoTabulaInfoVis = {
 	ODMatrix : ODMatrix, 
 	ODMatrixBar : ODMatrixBar,
-}
-
+};
+//************************************************************************
+// ODMatrix chord diagram
+// Version: V0.1.0
+// Update_Author : Juan Camilo Ibarra
+// Date: January 2016
+//************************************************************************
 function ODMatrix(params){
 	this.matrix = params.matrix;
 	this.matrixKeys = params.matrixKeys;
@@ -364,6 +382,17 @@ ODMatrix.prototype.createOdMatrixVisualizationDest = function() {
 
 	}
 
+
+//************************************************************************
+// ODMatrix Bar Diagram
+// Version: V0.1.0
+// Update_Author : Juan Camilo Ibarra
+// Date: January 2016
+//************************************************************************
+/**
+ * Constructor 
+ * @param {Object} params
+ */
 function ODMatrixBar(params){
 	this.width = params.width;
 	this.height = params.height;	
@@ -401,7 +430,7 @@ function ODMatrixBar(params){
 		right : 40,
 		bottom : 40,
 		left : 20
-	}
+	};
 	
 	this.tooltipDiv = d3.select("body").append("div")	
     	.attr("class", "tooltip")				
@@ -409,6 +438,9 @@ function ODMatrixBar(params){
 
 }
 
+/**
+ * Creates the visualization 
+ */
 ODMatrixBar.prototype.create = function()
 {
 	_this = this;
@@ -441,23 +473,23 @@ ODMatrixBar.prototype.create = function()
 		.attr("y", 5)
 		.attr("width", 15)
 		.attr("height", 10)
-		.attr("fill", _this.origColor)
+		.attr("fill", _this.origColor);
 	this.svg.append("text")
 		.text("Outcoming")
 		.attr("x", this.margin.left + 16)
 		.attr("y", 15)
-		.attr("font-size", 10)
+		.attr("font-size", 10);
 	this.svg.append("rect")
 		.attr("x", this.margin.left)
 		.attr("y", 17)
 		.attr("width", 15)
 		.attr("height", 10)
-		.attr("fill", _this.destColor)
+		.attr("fill", _this.destColor);
 	this.svg.append("text")
 		.text("Incoming")
 		.attr("x", this.margin.left + 16)
 		.attr("y", 27)
-		.attr("font-size", 10)
+		.attr("font-size", 10);
 	
 	
 	this.chartwidth = parseInt(this.svg.style('width'), 10) - this.margin.left - this.margin.right;
@@ -539,7 +571,7 @@ ODMatrixBar.prototype.create = function()
 		})
 		.on("click", function(d,i){
 			_this.barclick(d,i,"orig");
-		})
+		});
 		
 	bar.append("rect")
 		.attr("x", (barWidth / 2) - 1)
@@ -579,7 +611,7 @@ ODMatrixBar.prototype.create = function()
 		})
 		.on("click", function(d,i){
 			_this.barclick(d,i,"dest");
-		})
+		});
 
 	bar.append("line")
 		.attr("x1",(barWidth / 2) - 1)
@@ -756,8 +788,13 @@ ODMatrixBar.prototype.create = function()
 	    .on('mouseout', function(d){
 	    	_this.onmouseoverPath();
 	    });	
-}
-
+};
+/**
+ *  
+ * @param {Object} d
+ * @param {Object} i
+ * @param {Object} type
+ */
 ODMatrixBar.prototype.barclick = function(d, i, type)
 {
 	if(this.selected.id == 'none')
@@ -775,8 +812,13 @@ ODMatrixBar.prototype.barclick = function(d, i, type)
 		
 	if(this.onmouseclick)
 		this.onmouseclick(d,i);
-}
+};
 
+/**
+ * 
+ * @param {Object} type
+ * @param {Object} i
+ */
 ODMatrixBar.prototype.fade = function(type, i)
 {
 	_this = this;
@@ -784,24 +826,24 @@ ODMatrixBar.prototype.fade = function(type, i)
 	{
 		d3.selectAll(".rect_orig")
 			.attr("style", function(d){
-				return "fill-opacity:1.0"	
+				return "fill-opacity:1.0";	
 			})
 			.attr("height", function(d,index){
 				 return _this.chartheight - _this.scaleY(d.o);
 			})
 			.attr("y", function(d, index){
 				return _this.scaleY(d.o);
-			})
+			});
 		d3.selectAll(".rect_dest")
 			.attr("style", function(d){
-				return "fill-opacity:1.0"	
+				return "fill-opacity:1.0";	
 			})
 			.attr("height", function(d,index){
 				 return _this.chartheight - _this.scaleY(d.d);
 			})
 			.attr("y", function(d, index){
 				return _this.scaleY(d.d);
-			})
+			});
 		this.highlightPath();
 		if (this.onmouseout) {
 			this.onmouseout(this.matrixKeys[i], i);
@@ -816,8 +858,8 @@ ODMatrixBar.prototype.fade = function(type, i)
 			d3.selectAll(".rect_orig")
 				.attr("style", function(d){
 					var data = parseInt(d3.select(this).attr("data").replace("rect_orig_",""));
-					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.1" 	
-				})
+					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.1"; 	
+				});
 			d3.selectAll(".rect_dest")
 				.attr("height", function(d,index){
 					 var trips = _this.matrix[i][index];
@@ -826,7 +868,7 @@ ODMatrixBar.prototype.fade = function(type, i)
 				.attr("y", function(d, index){
 					var trips = _this.matrix[i][index];
 					return _this.scaleY(trips);
-				})
+				});
 			this.highlightPath(i, null);
 
 		}
@@ -835,8 +877,8 @@ ODMatrixBar.prototype.fade = function(type, i)
 			d3.selectAll(".rect_dest")
 				.attr("style", function(d){
 					var data = parseInt(d3.select(this).attr("data").replace("rect_dest_",""));
-					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.1" 	
-				})
+					return data == i ? "fill-opacity:1.0" : "fill-opacity:0.1"; 	
+				});
 			d3.selectAll(".rect_orig")
 				.attr("height", function(d,index){
 					 var trips = _this.matrix[index][i];
@@ -845,7 +887,7 @@ ODMatrixBar.prototype.fade = function(type, i)
 				.attr("y", function(d, index){
 					var trips = _this.matrix[index][i];
 					return _this.scaleY(trips);
-				})
+				});
 			this.highlightPath(null,i);
 		}
 		if (this.onmouseover) {
@@ -853,8 +895,11 @@ ODMatrixBar.prototype.fade = function(type, i)
 		}
 			
 	}
-}
-
+};
+/**
+ *  
+ * @param {Object} i
+ */
 ODMatrixBar.prototype.showTooltip = function(i)
 {
 	if(i != null)
@@ -887,13 +932,13 @@ ODMatrixBar.prototype.showTooltip = function(i)
 					if(parseInt(d.i) == _this.selected.i)
 						return 1;
 					else
-						return _this.selected.type == "orig" ? 0 : 1
+						return _this.selected.type == "orig" ? 0 : 1;
 				})
 				.attr("font-weight", function(d){
 					if(parseInt(d.i) == _this.selected.i)
-						return _this.selected.type == "orig" ? "bold" : "normal"
+						return _this.selected.type == "orig" ? "bold" : "normal";
 					else
-						return _this.selected.type == "orig" ? "normal" : "bold"
+						return _this.selected.type == "orig" ? "normal" : "bold";
 				})
 				.attr("fill", function(d){
 					if(parseInt(d.i) == _this.selected.i)
@@ -912,7 +957,7 @@ ODMatrixBar.prototype.showTooltip = function(i)
 					if(parseInt(d.i) == _this.selected.i)
 						return 1;
 					else
-						return _this.selected.type == "orig" ? 1 : 0
+						return _this.selected.type == "orig" ? 1 : 0;
 				})
 				.attr("font-weight", function(d){
 					if(parseInt(d.i) == _this.selected.i)
@@ -941,8 +986,12 @@ ODMatrixBar.prototype.showTooltip = function(i)
 		d3.selectAll(".bar_label_text")
 			.attr("opacity", 0);
 	}
-}
-
+};
+/**
+ * 
+ * @param {Object} orig
+ * @param {Object} dest
+ */
 ODMatrixBar.prototype.highlightPath = function(orig, dest)
 {
 	if(orig != null && dest != null)
@@ -1018,8 +1067,13 @@ ODMatrixBar.prototype.highlightPath = function(orig, dest)
 			}
 		}
 	}
-}
+};
 
+/**
+ * 
+ * @param {Object} orig
+ * @param {Object} dest
+ */
 ODMatrixBar.prototype.onmouseoverPath = function(orig, dest)
 {
 	if(orig != null && dest != null)
@@ -1084,4 +1138,4 @@ ODMatrixBar.prototype.onmouseoverPath = function(orig, dest)
 		}
 	}
 	
-}
+};
